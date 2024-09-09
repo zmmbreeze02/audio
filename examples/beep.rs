@@ -55,6 +55,13 @@ where
     let channels = config.channels as usize;
 
     // Produce a sinusoid of maximum amplitude.
+    // 正弦波的公式是：y(t) = A * sin(2 * π * f * t + ϕ)
+    // - y(t) 是时间 t 时的波形值
+    // - A 是振幅，表示波的最大值，这里是 1
+    // - f 是频率，表示单位时间内波形重复的次数，这里是 440hz，在西方音乐上440hz的声音音调为标准音高
+    // - 2πf 是角频率，表示单位时间内波形的角位移
+    // - ϕ 是相位角，表示波形相对于时间轴的偏移，这里是 0
+    // - t 是时间，在这里是 sample_clock / sample_rate
     let mut sample_clock = 0f32;
     let mut next_value = move || {
         sample_clock = (sample_clock + 1.0) % sample_rate;
@@ -73,7 +80,7 @@ where
     )?;
     stream.play()?;
 
-    std::thread::sleep(std::time::Duration::from_millis(1000));
+    // std::thread::sleep(std::time::Duration::from_millis(1000));
 
     Ok(())
 }

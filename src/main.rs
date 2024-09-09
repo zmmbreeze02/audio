@@ -1,4 +1,7 @@
+pub mod fft;
+
 use anyhow::{Result, anyhow};
+use fft::fft;
 use cpal::{
     traits::{DeviceTrait, HostTrait, StreamTrait}, Device, FromSample, Sample, SizedSample
 };

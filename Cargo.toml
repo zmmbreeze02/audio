@@ -7,8 +7,13 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.81"
+audioviz = "0.6.0"
 clap = { version = "4.5.3", features = ["derive"] }
 cpal = "0.15.3"
+num-complex = "0.4.6"
+plotters = "0.3.7"
+spectrum-analyzer = "1.5.0"
+thiserror = "1.0.63"
 
 
 [[example]]
