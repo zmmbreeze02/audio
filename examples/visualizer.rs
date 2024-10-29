@@ -17,7 +17,7 @@ fn main() {
     let mut samples: Vec<f32> = Vec::new();
     for n in 0..sample_length {
         let sample_clock = (n + 1) as f32 % sample_rate;
-        samples.push((sample_clock * 200.0 * 2.0 * std::f32::consts::PI / sample_rate).sin());
+        samples.push((n as f32 * 200.0 * 2.0 * std::f32::consts::PI / sample_rate).sin());
     }
     // println!("{:?}, len={}", samples, samples.len());
 

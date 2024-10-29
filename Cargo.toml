@@ -3,15 +3,24 @@ name = "audio"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+path = "src/lib.rs"
+
+[[example]]
+name = "fft"
+path = "examples/fft.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0.81"
 audioviz = "0.6.0"
+charming = "0.4.0"
 clap = { version = "4.5.3", features = ["derive"] }
 cpal = "0.15.3"
 num-complex = "0.4.6"
 plotters = "0.3.7"
+rand = "0.8.5"
 spectrum-analyzer = "1.5.0"
 thiserror = "1.0.63"
 
