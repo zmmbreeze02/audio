@@ -33,3 +33,30 @@ pub fn dft(samples: &[f64]) -> Result<Vec<Complex<f64>>, DFTError> {
 
     Ok(result)
 }
+
+// calc spectrum as `Vec<(frequency, complex_result)>`
+pub fn calc_spectrum_by_dft(samples: &[f64], sample_rate: f64) -> Result<Vec<(f64, Complex<f64>)>, DFTError> {
+    let sample_count = samples.len() as f64;
+    let spectrum = dft(samples)?
+        .into_iter()
+        .enumerate()
+        .map(|(k, c)| (k as f64 * sample_rate / sample_count, c))
+        .collect();
+    Ok(spectrum)
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::{calc_spectrum_by_dft, dft, DFTError};
+    use super::super::mock::{mock_sine, mock_cosine, find_frequency_in_spectrum};
+
+    #[test]
+    fn test_binary_search() -> Result<(), DFTError> {
+        let spectrum = calc_spectrum_by_dft(&mock_sine(vec![5.0], vec![0.0], 2, 1000.0), 1000.0)?;
+        // assert_eq!(binary_search(&input, 0), None);
+        println!("{:?}", find_frequency_in_spectrum(spectrum, None));
+        Ok(())
+    }
+
+}

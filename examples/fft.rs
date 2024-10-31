@@ -56,8 +56,9 @@ fn main() -> anyhow::Result<()> {
         let value = (2.0 * std::f64::consts::PI * FREQUENCY * t).cos();
         sine_wave.push(value); // 将计算的正弦值推入向量
     }
-    let mut sine_r_map: Vec<(f64, f64)> = dft(&sine_wave)?.into_iter().map(|r| (r.re, r.im)).collect();
-    let mut sine_magnitude_map: Vec<f64> = sine_r_map.to_vec().into_iter().map(|r| magnitude(r)).collect();
+    let sine_r_map: Vec<(f64, f64)> = dft(&sine_wave)?.into_iter().map(|r| (r.re, r.im)).collect();
+    let sine_magnitude_map: Vec<f64> = sine_r_map.to_vec().into_iter().map(|r| magnitude(r)).collect();
+    let sine_phase_map: Vec<f64> = sine_r_map.to_vec().into_iter().map(|r: (f64, f64)| phase(r)).collect();
 
     println!("");
     let (max_index, max_value) = sine_magnitude_map[1..(sample_count/2)]
@@ -76,10 +77,11 @@ fn main() -> anyhow::Result<()> {
 
     let time_axis: Vec<String> = (0..=sample_count).map(|i| format!("{:.1}s", i as f64/SAMPLE_RATE as f64)).collect();
     draw_line_chart("./sine_time.html".to_string(), time_axis.to_vec(), sine_wave)?;
-    let frequency_axis: Vec<String> = (0..=sample_count).map(|i| i.to_string()).collect();
+    let frequency_axis: Vec<String> = (0..=sample_count).map(|i| format!("{}hz", (i + 1) as f64 * SAMPLE_RATE / sample_count as f64)).collect();
     draw_line_chart("./sine_frequency.html".to_string(), frequency_axis.to_vec(), sine_magnitude_map)?;
-    // draw_line_chart("./sine_phase.html".to_string(), frequency_axis.to_vec(), sine_phase_map)?;
-    // draw_line_chart("./sine_real.html".to_string(), frequency_axis.to_vec(), sine_r_map.into_iter().map(|(r,i)| r).collect())?;
+    draw_line_chart("./sine_phase.html".to_string(), frequency_axis.to_vec(), sine_phase_map)?;
+    draw_line_chart("./sine_real.html".to_string(), frequency_axis.to_vec(), sine_r_map.to_vec().into_iter().map(|(r, _)| r).collect())?;
+    draw_line_chart("./sine_imag.html".to_string(), frequency_axis.to_vec(), sine_r_map.into_iter().map(|(_, i)| i).collect())?;
 
     anyhow::Ok(())
 }
