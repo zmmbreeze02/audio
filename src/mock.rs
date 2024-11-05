@@ -49,7 +49,8 @@ pub fn mock_cosine(frequency_list: Vec<f64>, phase_list: Vec<f64>, duration: usi
 
 pub fn find_frequency_in_spectrum(spectrum: Vec<(f64, Complex<f64>)>, threshold: Option<f64>) -> Vec<(f64, Complex<f64>)> {
     let threshold = threshold.unwrap_or(100.0);
-    spectrum.into_iter()
+    spectrum[..(spectrum.len()/2)].to_vec()
+        .into_iter()
         .filter(|v| v.1.norm() >= threshold)
         .collect()
 }
