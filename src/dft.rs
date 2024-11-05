@@ -52,10 +52,28 @@ mod tests {
     use super::super::mock::{mock_sine, mock_cosine, find_frequency_in_spectrum};
 
     #[test]
-    fn test_binary_search() -> Result<(), DFTError> {
+    fn test_calc_spectrum_by_dft() -> Result<(), DFTError> {
         let spectrum = calc_spectrum_by_dft(&mock_sine(vec![5.0], vec![0.0], 2, 1000.0), 1000.0)?;
-        // assert_eq!(binary_search(&input, 0), None);
-        println!("{:?}", find_frequency_in_spectrum(spectrum, None));
+        let r = find_frequency_in_spectrum(spectrum, None);
+        // println!("{:?}", r);
+        assert_eq!(r.len(), 1);
+        assert_eq!(r[0].0, 5.0);
+
+        let spectrum = calc_spectrum_by_dft(&mock_sine(vec![5.0, 10.0], vec![0.0, 10.0], 2, 1000.0), 1000.0)?;
+        let r = find_frequency_in_spectrum(spectrum, None);
+        // println!("{:?}", r);
+        assert_eq!(r.len(), 2);
+        assert_eq!(r[0].0, 5.0);
+        assert_eq!(r[1].0, 10.0);
+
+        let spectrum = calc_spectrum_by_dft(&mock_sine(vec![5.0, 10.0, 7000.0], vec![0.0, 10.0, 10000.0], 2, 16000.0), 16000.0)?;
+        let r = find_frequency_in_spectrum(spectrum, None);
+        // println!("{:?}", r);
+        assert_eq!(r.len(), 3);
+        assert_eq!(r[0].0, 5.0);
+        assert_eq!(r[1].0, 10.0);
+        assert_eq!(r[2].0, 7000.0);
+
         Ok(())
     }
 
