@@ -48,7 +48,7 @@ pub fn calc_spectrum_by_dft(samples: &[f64], sample_rate: f64) -> Result<Vec<(f6
 
 #[cfg(test)]
 mod tests {
-    use super::{calc_spectrum_by_dft, dft, DFTError};
+    use super::{calc_spectrum_by_dft, DFTError};
     use super::super::mock::{mock_sine, mock_cosine, find_frequency_in_spectrum};
 
     #[test]
@@ -67,6 +67,14 @@ mod tests {
         assert_eq!(r[1].0, 10.0);
 
         let spectrum = calc_spectrum_by_dft(&mock_sine(vec![5.0, 10.0, 7000.0], vec![0.0, 10.0, 10000.0], 2, 16000.0), 16000.0)?;
+        let r = find_frequency_in_spectrum(spectrum, None);
+        // println!("{:?}", r);
+        assert_eq!(r.len(), 3);
+        assert_eq!(r[0].0, 5.0);
+        assert_eq!(r[1].0, 10.0);
+        assert_eq!(r[2].0, 7000.0);
+
+        let spectrum = calc_spectrum_by_dft(&mock_cosine(vec![5.0, 10.0, 7000.0], vec![0.0, 10.0, 10000.0], 2, 16000.0), 16000.0)?;
         let r = find_frequency_in_spectrum(spectrum, None);
         // println!("{:?}", r);
         assert_eq!(r.len(), 3);
