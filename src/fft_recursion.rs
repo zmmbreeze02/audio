@@ -63,16 +63,17 @@ fn _fft_recursion_k(position: usize, k: usize, samples: Vec<f64>, cache: &mut Ha
     if k >= len/2 {
         // X[k] = X_{even}[k] - W_N^k * X_{odd}[k]
         // use cached X_{odd}[k] and W_N^k * X_{even}[k]
-        let real_k = k - len/2;
-        if let Some((l, r)) = cache.get(&(len, real_k, position)) {
+        if let Some((l, r)) = cache.get(&(len, k - len/2, position)) {
             return l - r;
         }
         unreachable!();
     }
 
+    // println!("k:{}, len:{}, pos:{}, samples:{:?}", k, len, position, samples);
+
     // X[k] = X_{even}[k] + W_N^k * X_{odd}[k]
     // split samples into odd and even part
-    let (odd_indices, even_indices): (Vec<_>, Vec<_>) = samples
+    let (even_indices, odd_indices): (Vec<_>, Vec<_>) = samples
         .iter()
         .enumerate()
         .partition(|&(index, _)| index % 2 == 0);
@@ -105,8 +106,17 @@ mod tests {
 
     #[test]
     fn test_calc_spectrum_by_fft_recursion() -> Result<(), FFTError> {
-        let sine = mock_sine(vec![5.0], vec![0.0], 2, 1024.0);
-        let spectrum = calc_spectrum_by_fft_recursion(&sine, 1024.0)?;
+        // let sine = mock_sine(vec![1.0], vec![0.0], 1, 8.0);
+        // println!("original: {:?}", sine);
+        // let spectrum = calc_spectrum_by_fft_recursion(&sine, 8.0)?;
+        // let sp: Vec<(f64,f64)> = spectrum.clone().into_iter().map(|(k, v)| (k, v.norm())).collect();
+        // println!("result: {:?}", sp);
+        // let r = find_frequency_in_spectrum(spectrum, None);
+        // // println!("\n{:?}", r);
+        // assert_eq!(r.len(), 1);
+        // assert_eq!(r[0].0, 1.0);
+
+        let spectrum = calc_spectrum_by_fft_recursion(&mock_sine(vec![5.0], vec![0.0], 2, 1024.0), 1024.0)?;
         let r = find_frequency_in_spectrum(spectrum, None);
         // println!("\n{:?}", r);
         assert_eq!(r.len(), 1);
