@@ -1,10 +1,21 @@
 use num_complex::Complex;
+use thiserror::Error;
 use std::f64::consts::PI;
 use std::collections::HashMap;
 
-use crate::fft::FFTError;
 
-pub fn fft_recursion(samples: &[f64]) -> Result<Vec<Complex<f64>>, FFTError> {
+
+#[derive(Error, Debug)]
+pub enum FFTError {
+    #[error("Size of samples is not enough {0}")]
+    NotEnoughSamples(usize),
+    #[error("Size of samples is not power of two {0}")]
+    NotPowerOfTwo(usize),
+    #[error("unknown data store error")]
+    Unknown,
+}
+
+pub fn fft(samples: &[f64]) -> Result<Vec<Complex<f64>>, FFTError> {
     let len = samples.len();
     if len <= 1 {
         return Err(FFTError::NotEnoughSamples(len));
@@ -21,6 +32,14 @@ pub fn fft_recursion(samples: &[f64]) -> Result<Vec<Complex<f64>>, FFTError> {
 
     Ok(result)
 }
+
+fn _bit_reverse() {
+
+}
+
+
+
+
 
 // result = W_N^k = e^{-j * 2\pi * k / N}
 fn _gen_w_n(k: usize, len: usize) -> Complex<f64> {
@@ -77,9 +96,9 @@ fn _fft_recursion_k(position: usize, k: usize, samples: Vec<f64>, cache: &mut Ha
 }
 
 // calc spectrum as `Vec<(frequency, complex_result)>`
-pub fn calc_spectrum_by_fft_recursion(samples: &[f64], sample_rate: f64) -> Result<Vec<(f64, Complex<f64>)>, FFTError> {
+pub fn calc_spectrum_by_fft(samples: &[f64], sample_rate: f64) -> Result<Vec<(f64, Complex<f64>)>, FFTError> {
     let sample_count = samples.len() as f64;
-    let spectrum = fft_recursion(samples)?
+    let spectrum = fft(samples)?
         .into_iter()
         .enumerate()
         .map(|(k, c)| (k as f64 * sample_rate / sample_count, c))
@@ -90,14 +109,14 @@ pub fn calc_spectrum_by_fft_recursion(samples: &[f64], sample_rate: f64) -> Resu
 
 #[cfg(test)]
 mod tests {
-    use super::{calc_spectrum_by_fft_recursion, FFTError};
+    use super::{calc_spectrum_by_fft, FFTError};
     use super::super::mock::{mock_sine, mock_cosine, find_frequency_in_spectrum};
 
     #[test]
-    fn test_calc_spectrum_by_fft_recursion() -> Result<(), FFTError> {
+    fn test_calc_spectrum_by_fft() -> Result<(), FFTError> {
         // let sine = mock_sine(vec![1.0], vec![0.0], 1, 8.0);
         // println!("original: {:?}", sine);
-        // let spectrum = calc_spectrum_by_fft_recursion(&sine, 8.0)?;
+        // let spectrum = calc_spectrum_by_fft(&sine, 8.0)?;
         // let sp: Vec<(f64,f64)> = spectrum.clone().into_iter().map(|(k, v)| (k, v.norm())).collect();
         // println!("result: {:?}", sp);
         // let r = find_frequency_in_spectrum(spectrum, None);
@@ -105,20 +124,20 @@ mod tests {
         // assert_eq!(r.len(), 1);
         // assert_eq!(r[0].0, 1.0);
 
-        let spectrum = calc_spectrum_by_fft_recursion(&mock_sine(vec![5.0], vec![0.0], 2, 1024.0), 1024.0)?;
+        let spectrum = calc_spectrum_by_fft(&mock_sine(vec![5.0], vec![0.0], 2, 1024.0), 1024.0)?;
         let r = find_frequency_in_spectrum(spectrum, None);
         // println!("\n{:?}", r);
         assert_eq!(r.len(), 1);
         assert_eq!(r[0].0, 5.0);
 
-        let spectrum = calc_spectrum_by_fft_recursion(&mock_sine(vec![5.0, 10.0], vec![0.0, 10.0], 2, 1024.0), 1024.0)?;
+        let spectrum = calc_spectrum_by_fft(&mock_sine(vec![5.0, 10.0], vec![0.0, 10.0], 2, 1024.0), 1024.0)?;
         let r = find_frequency_in_spectrum(spectrum, None);
         // println!("{:?}", r);
         assert_eq!(r.len(), 2);
         assert_eq!(r[0].0, 5.0);
         assert_eq!(r[1].0, 10.0);
 
-        let spectrum = calc_spectrum_by_fft_recursion(&mock_sine(vec![5.0, 10.0, 7000.0], vec![0.0, 10.0, 10000.0], 2, 16.0*1024.0), 16.0*1024.0)?;
+        let spectrum = calc_spectrum_by_fft(&mock_sine(vec![5.0, 10.0, 7000.0], vec![0.0, 10.0, 10000.0], 2, 16.0*1024.0), 16.0*1024.0)?;
         let r = find_frequency_in_spectrum(spectrum, None);
         // println!("{:?}", r);
         assert_eq!(r.len(), 3);
@@ -126,7 +145,7 @@ mod tests {
         assert_eq!(r[1].0, 10.0);
         assert_eq!(r[2].0, 7000.0);
 
-        let spectrum = calc_spectrum_by_fft_recursion(&mock_cosine(vec![5.0, 10.0, 7000.0], vec![0.0, 10.0, 10000.0], 2, 16.0*1024.0), 16.0*1024.0)?;
+        let spectrum = calc_spectrum_by_fft(&mock_cosine(vec![5.0, 10.0, 7000.0], vec![0.0, 10.0, 10000.0], 2, 16.0*1024.0), 16.0*1024.0)?;
         let r = find_frequency_in_spectrum(spectrum, None);
         // println!("{:?}", r);
         assert_eq!(r.len(), 3);
