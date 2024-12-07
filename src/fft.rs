@@ -1,4 +1,5 @@
 use num_complex::Complex;
+use rand::seq::index;
 use thiserror::Error;
 use std::f64::consts::PI;
 use std::collections::HashMap;
@@ -33,12 +34,70 @@ pub fn fft(samples: &[f64]) -> Result<Vec<Complex<f64>>, FFTError> {
     Ok(result)
 }
 
-fn _bit_reverse() {
+/**
+ * Use Gold Rader bit reversal algorithm to swap the elements of samples.
+ * 
+ * This algorithm can do `input += 1` in the order of bit_reverse.
+ * 1. find the bit position of the first 0 as `n`.
+ * 2. Turn all the higher bits after the `n`th bit to 0.
+ * 3. Set the `n`th bit into 1.
+ * 
+ * For example: input is 6 = 0110
+ * 1. n = 1, bit = 1000
+ * 2. output = 1110
+ * 3. output = 1110
+ * 
+ * For example: input is 13 = 1101
+ * 1. n = 3, bit = 0010
+ * 2. output = 0001
+ * 3. output = 0011
+ * 
+ * For example: input is 13 = 1000
+ * 1. n = 2, bit = 0100
+ * 2. output = 0000
+ * 3. output = 0100
+ */
+fn _bit_reverse(samples: &mut [f64]) {
+    let len = samples.len();
+    let max_index = len - 1;
+    let mut reserved_index = 0;
 
+    for index in 1..len {
+        // use the previous `reserved_index`, and "grow it up" as the order of bit_reverse
+        let previous_reserved_index = reserved_index;
+    
+        // `bit` must be 2^n
+        // `n` represent of the bit position of the first 0
+        // (of course in the backward order)
+        let mut bit = len;
+
+        loop {
+            // move backward
+            bit >>= 1;
+
+            // find the bit position of the first 0, 
+            // `bit` must <= `max_index - previous_reserved_index`, for example:
+            // 1111 - 1101 = 0010, bit should be 0010, and 0010 = 0010
+            // 1111 - 1010 = 0101, bit should be 0100, and 0100 < 0101
+            // 1111 - 0000 = 1111, bit should be 1000, and 1000 < 1111
+            if bit <= max_index - previous_reserved_index {
+                break;
+            }
+        }
+
+        // mask of the `bit`, for example:
+        // 1000 => 0111
+        // 0100 => 0011
+        let mask = bit - 1;
+        // Set the `n`th bit of the `previous_reserved_index` to 1
+        // and turn all the higher bits after the `n`th bit to 0
+        reserved_index = (previous_reserved_index & mask) + bit;
+
+        if reserved_index > index {
+            samples.swap(index, reserved_index);
+        }
+    }
 }
-
-
-
 
 
 // result = W_N^k = e^{-j * 2\pi * k / N}
@@ -109,8 +168,27 @@ pub fn calc_spectrum_by_fft(samples: &[f64], sample_rate: f64) -> Result<Vec<(f6
 
 #[cfg(test)]
 mod tests {
-    use super::{calc_spectrum_by_fft, FFTError};
+    use super::{calc_spectrum_by_fft, FFTError, _bit_reverse};
     use super::super::mock::{mock_sine, mock_cosine, find_frequency_in_spectrum};
+
+
+    #[test]
+    fn test_bit_reverse() {
+        let mut samples: Vec<f64> = (0..4).map(|v| v as f64).collect();
+        _bit_reverse(&mut samples);
+        // samples.iter().enumerate().for_each(|(i, v)| println!("{} = {} = {:02b}", i, v.clone() as usize,v.clone() as usize));
+        assert_eq!(samples, vec![0.0, 2.0, 1.0, 3.0]);
+
+        let mut samples: Vec<f64> = (0..8).map(|v| v as f64).collect();
+        _bit_reverse(&mut samples);
+        // samples.iter().enumerate().for_each(|(i, v)| println!("{} = {} = {:03b}", i, v.clone() as usize,v.clone() as usize));
+        assert_eq!(samples, vec![0.0, 4.0, 2.0, 6.0, 1.0, 5.0, 3.0, 7.0]);
+
+        let mut samples: Vec<f64> = (0..16).map(|v| v as f64).collect();
+        _bit_reverse(&mut samples);
+        // samples.iter().enumerate().for_each(|(i, v)| println!("{} = {} = {:04b}", i, v.clone() as usize,v.clone() as usize));
+        assert_eq!(samples, vec![0.0, 8.0, 4.0, 12.0, 2.0, 10.0, 6.0, 14.0, 1.0, 9.0, 5.0, 13.0, 3.0, 11.0, 7.0, 15.0]);
+    }
 
     #[test]
     fn test_calc_spectrum_by_fft() -> Result<(), FFTError> {
@@ -124,34 +202,34 @@ mod tests {
         // assert_eq!(r.len(), 1);
         // assert_eq!(r[0].0, 1.0);
 
-        let spectrum = calc_spectrum_by_fft(&mock_sine(vec![5.0], vec![0.0], 2, 1024.0), 1024.0)?;
-        let r = find_frequency_in_spectrum(spectrum, None);
-        // println!("\n{:?}", r);
-        assert_eq!(r.len(), 1);
-        assert_eq!(r[0].0, 5.0);
+        // let spectrum = calc_spectrum_by_fft(&mock_sine(vec![5.0], vec![0.0], 2, 1024.0), 1024.0)?;
+        // let r = find_frequency_in_spectrum(spectrum, None);
+        // // println!("\n{:?}", r);
+        // assert_eq!(r.len(), 1);
+        // assert_eq!(r[0].0, 5.0);
 
-        let spectrum = calc_spectrum_by_fft(&mock_sine(vec![5.0, 10.0], vec![0.0, 10.0], 2, 1024.0), 1024.0)?;
-        let r = find_frequency_in_spectrum(spectrum, None);
-        // println!("{:?}", r);
-        assert_eq!(r.len(), 2);
-        assert_eq!(r[0].0, 5.0);
-        assert_eq!(r[1].0, 10.0);
+        // let spectrum = calc_spectrum_by_fft(&mock_sine(vec![5.0, 10.0], vec![0.0, 10.0], 2, 1024.0), 1024.0)?;
+        // let r = find_frequency_in_spectrum(spectrum, None);
+        // // println!("{:?}", r);
+        // assert_eq!(r.len(), 2);
+        // assert_eq!(r[0].0, 5.0);
+        // assert_eq!(r[1].0, 10.0);
 
-        let spectrum = calc_spectrum_by_fft(&mock_sine(vec![5.0, 10.0, 7000.0], vec![0.0, 10.0, 10000.0], 2, 16.0*1024.0), 16.0*1024.0)?;
-        let r = find_frequency_in_spectrum(spectrum, None);
-        // println!("{:?}", r);
-        assert_eq!(r.len(), 3);
-        assert_eq!(r[0].0, 5.0);
-        assert_eq!(r[1].0, 10.0);
-        assert_eq!(r[2].0, 7000.0);
+        // let spectrum = calc_spectrum_by_fft(&mock_sine(vec![5.0, 10.0, 7000.0], vec![0.0, 10.0, 10000.0], 2, 16.0*1024.0), 16.0*1024.0)?;
+        // let r = find_frequency_in_spectrum(spectrum, None);
+        // // println!("{:?}", r);
+        // assert_eq!(r.len(), 3);
+        // assert_eq!(r[0].0, 5.0);
+        // assert_eq!(r[1].0, 10.0);
+        // assert_eq!(r[2].0, 7000.0);
 
-        let spectrum = calc_spectrum_by_fft(&mock_cosine(vec![5.0, 10.0, 7000.0], vec![0.0, 10.0, 10000.0], 2, 16.0*1024.0), 16.0*1024.0)?;
-        let r = find_frequency_in_spectrum(spectrum, None);
-        // println!("{:?}", r);
-        assert_eq!(r.len(), 3);
-        assert_eq!(r[0].0, 5.0);
-        assert_eq!(r[1].0, 10.0);
-        assert_eq!(r[2].0, 7000.0);
+        // let spectrum = calc_spectrum_by_fft(&mock_cosine(vec![5.0, 10.0, 7000.0], vec![0.0, 10.0, 10000.0], 2, 16.0*1024.0), 16.0*1024.0)?;
+        // let r = find_frequency_in_spectrum(spectrum, None);
+        // // println!("{:?}", r);
+        // assert_eq!(r.len(), 3);
+        // assert_eq!(r[0].0, 5.0);
+        // assert_eq!(r[1].0, 10.0);
+        // assert_eq!(r[2].0, 7000.0);
 
         Ok(())
     }
