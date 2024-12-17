@@ -1,4 +1,5 @@
 use num_complex::Complex;
+use plotters::prelude::IntoLinspace;
 use rand::seq::index;
 use thiserror::Error;
 use std::f64::consts::PI;
@@ -16,7 +17,7 @@ pub enum FFTError {
     Unknown,
 }
 
-pub fn fft(samples: &[f64]) -> Result<Vec<Complex<f64>>, FFTError> {
+pub fn fft(samples: &mut [f64]) -> Result<Vec<Complex<f64>>, FFTError> {
     let len = samples.len();
     if len <= 1 {
         return Err(FFTError::NotEnoughSamples(len));
@@ -24,6 +25,9 @@ pub fn fft(samples: &[f64]) -> Result<Vec<Complex<f64>>, FFTError> {
     if !len.is_power_of_two() {
         return Err(FFTError::NotPowerOfTwo(len));
     }
+
+    // bit reverse
+    _bit_reverse(samples);
 
     let mut result = vec![Complex::ZERO; len];
     let mut cache = HashMap::new();
@@ -99,9 +103,35 @@ fn _bit_reverse(samples: &mut [f64]) {
     }
 }
 
+/**
+ * Use butterflies calculation to calc the FFT result.
+ */
+fn _butterflies(samples: &mut [f64]) -> Complex<f64> {
+    let len = samples.len();
+
+    for l in (0..len).step(2) {
+        
+    }
+
+    for (int len = 2; len <= N; len <<= 1) {
+        double ang = -2 * PI / len;
+        complex w = {cos(ang), sin(ang)};
+        for (int i = 0; i < N; i += len) {
+            complex w_pow = {1, 0};
+            for (int j = 0; j < len / 2; j++) {
+                complex u = a[i + j];
+                complex t = complexMul(w_pow, a[i + j + len / 2]);
+                a[i + j] = {u.real + t.real, u.imag + t.imag};
+                a[i + j + len / 2] = {u.real - t.real, u.imag - t.imag};
+                w_pow = complexMul(w_pow, w);
+            }
+        }
+    }
+}
+
 
 // result = W_N^k = e^{-j * 2\pi * k / N}
-fn _gen_w_n(k: usize, len: usize) -> Complex<f64> {
+fn _calc_twiddle(k: usize, len: usize) -> Complex<f64> {
     if k == 0 || k == len {
         return Complex::new(1.0, 0.0);
     }
@@ -148,14 +178,14 @@ fn _fft_recursion_k(position: usize, k: usize, samples: Vec<f64>, cache: &mut Ha
     let even_samples: Vec<f64> = even_indices.into_iter().map(|(_, value)| *value).collect();
     // combine odd and even part
     let l = _fft_recursion_k(position, k, even_samples, cache);
-    let r = _gen_w_n(k, len) * _fft_recursion_k(position | (len/2), k, odd_samples, cache);
+    let r = _calc_twiddle(k, len) * _fft_recursion_k(position | (len/2), k, odd_samples, cache);
 
     cache.insert((len, k, position), (l, r));
     l + r
 }
 
 // calc spectrum as `Vec<(frequency, complex_result)>`
-pub fn calc_spectrum_by_fft(samples: &[f64], sample_rate: f64) -> Result<Vec<(f64, Complex<f64>)>, FFTError> {
+pub fn calc_spectrum_by_fft(samples: &mut [f64], sample_rate: f64) -> Result<Vec<(f64, Complex<f64>)>, FFTError> {
     let sample_count = samples.len() as f64;
     let spectrum = fft(samples)?
         .into_iter()

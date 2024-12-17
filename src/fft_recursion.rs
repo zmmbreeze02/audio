@@ -23,7 +23,7 @@ pub fn fft_recursion(samples: &[f64]) -> Result<Vec<Complex<f64>>, FFTError> {
 }
 
 // result = W_N^k = e^{-j * 2\pi * k / N}
-fn _gen_w_n(k: usize, len: usize) -> Complex<f64> {
+fn _calc_twiddle(k: usize, len: usize) -> Complex<f64> {
     if k == 0 || k == len {
         return Complex::new(1.0, 0.0);
     }
@@ -70,7 +70,7 @@ fn _fft_recursion_k(position: usize, k: usize, samples: Vec<f64>, cache: &mut Ha
     let even_samples: Vec<f64> = even_indices.into_iter().map(|(_, value)| *value).collect();
     // combine odd and even part
     let l = _fft_recursion_k(position, k, even_samples, cache);
-    let r = _gen_w_n(k, len) * _fft_recursion_k(position | (len/2), k, odd_samples, cache);
+    let r = _calc_twiddle(k, len) * _fft_recursion_k(position | (len/2), k, odd_samples, cache);
 
     cache.insert((len, k, position), (l, r));
     l + r
