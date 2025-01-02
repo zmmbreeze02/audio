@@ -119,8 +119,9 @@ fn _butterflies(samples: &mut Vec<Complex<f64>>) {
             let block_tail_index = block_head_index + half_l;
             for i in block_head_index..block_tail_index {
                 let twiddle = _calc_twiddle(i % half_l, l);
+                let tmp = samples[i];
                 samples[i] = samples[i] + samples[i + half_l] * twiddle;
-                samples[i + half_l] = samples[i] - samples[i + half_l] * twiddle;
+                samples[i + half_l] = tmp - samples[i + half_l] * twiddle;
             }
         }
     }
@@ -188,32 +189,28 @@ mod tests {
     fn test_calc_spectrum_by_fft() -> Result<(), FFTError> {
         let spectrum = calc_spectrum_by_fft(&mock_sine(vec![5.0], vec![0.0], 2, 1024.0), 1024.0)?;
         let r = find_frequency_in_spectrum(spectrum, None);
-        println!("\n{:?}", r);
         assert_eq!(r.len(), 1);
         assert_eq!(r[0].0, 5.0);
 
-        // let spectrum = calc_spectrum_by_fft(&mock_sine(vec![5.0, 10.0], vec![0.0, 10.0], 2, 1024.0), 1024.0)?;
-        // let r = find_frequency_in_spectrum(spectrum, None);
-        // // println!("{:?}", r);
-        // assert_eq!(r.len(), 2);
-        // assert_eq!(r[0].0, 5.0);
-        // assert_eq!(r[1].0, 10.0);
+        let spectrum = calc_spectrum_by_fft(&mock_sine(vec![5.0, 10.0], vec![0.0, 10.0], 2, 1024.0), 1024.0)?;
+        let r = find_frequency_in_spectrum(spectrum, None);
+        assert_eq!(r.len(), 2);
+        assert_eq!(r[0].0, 5.0);
+        assert_eq!(r[1].0, 10.0);
 
-        // let spectrum = calc_spectrum_by_fft(&mock_sine(vec![5.0, 10.0, 7000.0], vec![0.0, 10.0, 10000.0], 2, 16.0*1024.0), 16.0*1024.0)?;
-        // let r = find_frequency_in_spectrum(spectrum, None);
-        // // println!("{:?}", r);
-        // assert_eq!(r.len(), 3);
-        // assert_eq!(r[0].0, 5.0);
-        // assert_eq!(r[1].0, 10.0);
-        // assert_eq!(r[2].0, 7000.0);
+        let spectrum = calc_spectrum_by_fft(&mock_sine(vec![5.0, 10.0, 7000.0], vec![0.0, 10.0, 10000.0], 2, 16.0*1024.0), 16.0*1024.0)?;
+        let r = find_frequency_in_spectrum(spectrum, None);
+        assert_eq!(r.len(), 3);
+        assert_eq!(r[0].0, 5.0);
+        assert_eq!(r[1].0, 10.0);
+        assert_eq!(r[2].0, 7000.0);
 
-        // let spectrum = calc_spectrum_by_fft(&mock_cosine(vec![5.0, 10.0, 7000.0], vec![0.0, 10.0, 10000.0], 2, 16.0*1024.0), 16.0*1024.0)?;
-        // let r = find_frequency_in_spectrum(spectrum, None);
-        // // println!("{:?}", r);
-        // assert_eq!(r.len(), 3);
-        // assert_eq!(r[0].0, 5.0);
-        // assert_eq!(r[1].0, 10.0);
-        // assert_eq!(r[2].0, 7000.0);
+        let spectrum = calc_spectrum_by_fft(&mock_cosine(vec![5.0, 10.0, 7000.0], vec![0.0, 10.0, 10000.0], 2, 16.0*1024.0), 16.0*1024.0)?;
+        let r = find_frequency_in_spectrum(spectrum, None);
+        assert_eq!(r.len(), 3);
+        assert_eq!(r[0].0, 5.0);
+        assert_eq!(r[1].0, 10.0);
+        assert_eq!(r[2].0, 7000.0);
 
         Ok(())
     }
