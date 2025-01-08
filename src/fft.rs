@@ -129,6 +129,7 @@ fn _butterflies(samples: &mut Vec<Complex<f64>>) {
 
 
 // result = W_N^k = e^{-j * 2\pi * k / N}
+//        = cos(-2\pi * k / N) + i * sin(-2\pi * k / N)
 fn _calc_twiddle(k: usize, len: usize) -> Complex<f64> {
     if k == 0 || k == len {
         return Complex::new(1.0, 0.0);
@@ -147,6 +148,59 @@ fn _calc_twiddle(k: usize, len: usize) -> Complex<f64> {
     let theta = -2.0 * PI * k_f64 / len_f64;
     Complex::new(theta.cos(), theta.sin())
 }
+
+/**
+ * Use butterflies calculation to calc the IFFT result.
+ */
+fn _inverse_butterflies(samples: &mut Vec<Complex<f64>>) {
+    let n = samples.len();
+    let max_stage = n.ilog2();
+
+    for stage in 1..=max_stage {
+        // Length of each block
+        let l = 2usize.pow(stage);
+        // Split samples into blocks
+        // for example when n=8, the blocks are:
+        // stage=1,l=2 => 0,1|2,3|4,5|6,7
+        // stage=2,l=4 => 0,1,2,3|4,5,6,7
+        // stage=3,l=8 => 0,1,2,3,4,5,6,7
+        for block_head_index in (0..n).step_by(l) {
+            // half of L
+            let half_l = l/2;
+            // iterate through each parts
+            let block_tail_index = block_head_index + half_l;
+            for i in block_head_index..block_tail_index {
+                let twiddle = _calc_inverse_twiddle(i % half_l, l);
+                let tmp = samples[i];
+                samples[i] = (samples[i] + samples[i + half_l] * twiddle) / l as f64;
+                samples[i + half_l] = tmp - samples[i + half_l] * twiddle;
+            }
+        }
+    }
+}
+
+
+// result = W_N^k = e^{j * 2\pi * k / N}
+//        = cos(2\pi * k / N) + i * sin(2\pi * k / N)
+fn _calc_inverse_twiddle(k: usize, len: usize) -> Complex<f64> {
+    if k == 0 || k == len {
+        return Complex::new(1.0, 0.0);
+    }
+    if len == 2 * k {
+        return Complex::new(-1.0, 0.0);
+    }
+    if len == 4 * k {
+        return Complex::new(0.0, 1.0);
+    }
+    if len * 3 == 4 * k {
+        return Complex::new(0.0, -1.0);
+    }
+    let len_f64 = len as f64;
+    let k_f64 = k as f64;
+    let theta = 2.0 * PI * k_f64 / len_f64;
+    Complex::new(theta.cos(), theta.sin())
+}
+
 
 // calc spectrum as `Vec<(frequency, complex_result)>`
 pub fn calc_spectrum_by_fft(samples: &[f64], sample_rate: f64) -> Result<Vec<(f64, Complex<f64>)>, FFTError> {
