@@ -1,5 +1,6 @@
 
 use std::ops::Range;
+use csv::Writer;
 use charming::{
     component::Legend,
     component::Axis,
@@ -10,6 +11,17 @@ use charming::{
 use audio::fft::calc_spectrum_by_fft;
 use audio::mock::mock_sine;
 use num_complex::Complex;
+use audio::window::hanning;
+
+fn write_csv(file_name: &str, frequency_axis: &[String], data: &[f64]) -> anyhow::Result<()> {
+    let mut writer = Writer::from_path(file_name)?;
+    writer.write_record(&["frequency", "db"])?;
+    for (i, data) in data.iter().enumerate() {
+        writer.write_record([&frequency_axis[i], &data.to_string()])?;
+    }
+    writer.flush()?;
+    Ok(())
+}
 
 fn draw_line_chart(file_name: &str, axis: Vec<String>, data: Vec<f64>) -> anyhow::Result<()> {
     let line_chart = Chart::new()
@@ -39,11 +51,12 @@ fn draw_spectrum_chart(file_name: &str, data: Vec<(f64, Complex<f64>)>) -> anyho
         }
     });
     let data_with_log: Vec<f64> = data_with_magnitude.iter().map(|mag|
-        20.0 * (mag / sample_count as f64).log10()
+        20.0 * (mag / max_magnitude).log10()
     ).collect();
     let frequency_axis: Vec<String> = data.iter().map(|(k,_)| {
         format!("{}hz", k)
     }).collect();
+    write_csv(&file_name.replace(".html", ".csv"), &frequency_axis, &data_with_log)?;
     draw_line_chart(file_name, frequency_axis, data_with_log)
 }
 
@@ -62,6 +75,11 @@ fn test_sin_wave(frequency_list: Vec<f64>, sample_rate: f64, duration: usize, si
             wave[i] = 0.0;
         }
     }
+    let hanning_window = hanning(wave.len());
+    for i in 0..wave.len() {
+        wave[i] *= hanning_window[i];
+    }
+
     let spectrum = calc_spectrum_by_fft(&wave, sample_rate)?;
     // let r = find_frequency_in_spectrum(spectrum, None);
     let name = format!(
@@ -75,7 +93,7 @@ fn test_sin_wave(frequency_list: Vec<f64>, sample_rate: f64, duration: usize, si
 }
 
 fn main() -> anyhow::Result<()> {
-    test_sin_wave(vec![10.0], 1024.0, 1, None)?;
-    test_sin_wave(vec![10.0], 1024.0, 1, Some(125..1000))?;
+    test_sin_wave(vec![100.0], 1024.0, 1, None)?;
+    test_sin_wave(vec![100.0], 1024.0, 1, Some(100..200))?;
     anyhow::Ok(())
 }
